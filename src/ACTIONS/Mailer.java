@@ -1,6 +1,7 @@
 package ACTIONS;
 
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Session;
@@ -18,48 +19,56 @@ import javax.mail.internet.MimeMessage;
  *
  * @author chathula
  */
-public class Mailer {
+public class Mailer implements Runnable {
     
-        private final static String HOST = "smtp.gmail.com";
-        private final static String PORT = "587";
-        private final static String SMTP_EMAIL = "nsbm.user@gmail.com";
-        private final static String SMTP_PASSWORD = "nsbm@123";
-    
-        public static boolean sendEmail(String email, String message) {
-          Properties properties = System.getProperties();
+    private final String HOST = "smtp.gmail.com";
+    private final String PORT = "587";
+    private final String SMTP_EMAIL = "nsbm.user@gmail.com";
+    private final String SMTP_PASSWORD = "nsbm@123";
 
-          properties.put("mail.smtp.auth", "true");
-          properties.setProperty("mail.transport.protocol", "smtp");
-          properties.put("mail.smtp.starttls.enable", "true");
-          properties.setProperty("mail.smtp.port", PORT);
-          properties.setProperty("mail.smtp.host", HOST);
-          properties.put("mail.user", SMTP_EMAIL);
-          properties.put("mail.password", SMTP_PASSWORD);
+    private String email;
+    private String message;
+    private Properties properties = System.getProperties();
+    private AtomicBoolean status;
 
-          Session session = Session.getDefaultInstance(properties);
+    public Mailer(String email, String message, AtomicBoolean status) {
+        this.email = email;
+        this.message = message;
+        this.status = status;
+    }
 
-                try {
-           // Create a default MimeMessage object.
-           MimeMessage msg = new MimeMessage(session);
+    public void run() {
+        try {
+            properties.put("mail.smtp.auth", "true");
+            properties.setProperty("mail.transport.protocol", "smtp");
+            properties.put("mail.smtp.starttls.enable", "true");
+            properties.setProperty("mail.smtp.port", PORT);
+            properties.setProperty("mail.smtp.host", HOST);
+            properties.put("mail.user", SMTP_EMAIL);
+            properties.put("mail.password", SMTP_PASSWORD);
 
-           // Set From: header field of the header.
-           msg.setFrom(new InternetAddress(SMTP_EMAIL));
+            Session session = Session.getDefaultInstance(properties);
+             // Create a default MimeMessage object.
+             MimeMessage msg = new MimeMessage(session);
 
-           // Set To: header field of the header.
-           msg.addRecipient(Message.RecipientType.TO, new InternetAddress(email));
+             // Set From: header field of the header.
+             msg.setFrom(new InternetAddress(SMTP_EMAIL));
 
-           // Set Subject: header field
-           msg.setSubject("NSBM Students Results Manager");
+             // Set To: header field of the header.
+             msg.addRecipient(Message.RecipientType.TO, new InternetAddress(email));
 
-           // Now set the actual message
-           msg.setText(message);
+             // Set Subject: header field
+             msg.setSubject("NSBM Students Results Manager");
 
-           // Send message
-           Transport.send(msg, SMTP_EMAIL, SMTP_PASSWORD);
-           System.out.println("Sent message successfully....");
-           return true;
-        } catch (MessagingException mex) {
-            return false;
+             // Now set the actual message
+             msg.setText(message);
+
+             // Send message
+             Transport.send(msg, SMTP_EMAIL, SMTP_PASSWORD);
+             status.set(true);
+             System.out.println("Sent message successfully....");
+        } catch (Exception e) {
+            status.set(false);
         }
-      }
+    }
 }

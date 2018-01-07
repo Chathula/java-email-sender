@@ -7,12 +7,17 @@ package UI;
 
 import javax.swing.JOptionPane;
 import ACTIONS.Mailer;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author chathula
  */
 public class Email extends javax.swing.JFrame {
+    
+    final AtomicBoolean status = new AtomicBoolean(false);
 
     /**
      * Creates new form Email
@@ -124,8 +129,15 @@ public class Email extends javax.swing.JFrame {
                     "Email Sending", 
                     JOptionPane.WARNING_MESSAGE);
         } else {
-            boolean result = Mailer.sendEmail(email.getText(), message.getText());
-            if (result) {
+            Thread result = new Thread(new Mailer(email.getText(), message.getText(), status));
+            result.start();
+            try {
+                result.join();
+            } catch (InterruptedException ex) {
+                Logger.getLogger(Email.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            
+            if (status.get()) {
                 JOptionPane.showMessageDialog(null, 
                     "Email Sent successfully", 
                     "Email Sending", 
